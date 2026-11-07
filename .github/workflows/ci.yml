@@ -1,0 +1,87 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Unit tests and script run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Unit tests
+        run: pytest -q
+      - name: Run the script against the real Rick and Morty API
+        run: |
+          python -m app.export --output characters.csv
+          head -n 5 characters.csv
+      - name: Keep the CSV as a build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: characters-csv
+          path: characters.csv
+
+  kubernetes:
+    name: Docker image, kind cluster, deploy and test
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the Docker image
+        run: docker build -t rickandmorty-api:1.0.0 .
+
+      - name: Create a small Kubernetes cluster (kind)
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: rm-ci
+
+      - name: Load the image into the cluster
+        run: kind load docker-image rickandmorty-api:1.0.0 --name rm-ci
+
+      - name: Deploy the plain manifests (yamls/)
+        run: |
+          kubectl apply -f yamls/
+          kubectl rollout status deployment/rickandmorty-api --timeout=120s
+          kubectl get deployment,service,ingress,pods
+
+      - name: Test the application deployed from yamls/
+        run: |
+          kubectl port-forward svc/rickandmorty-api 18080:80 &
+          for i in $(seq 1 30); do curl -fs http://localhost:18080/healthcheck && break; sleep 1; done
+          scripts/smoke_test.sh http://localhost:18080
+
+      - name: Remove the plain manifests
+        run: |
+          pkill -f "kubectl port-forward" || true
+          kubectl delete -f yamls/
+
+      - name: Lint and deploy the Helm chart
+        run: |
+          helm lint helm/rickandmorty
+          helm install rickandmorty helm/rickandmorty --set ingress.enabled=false --wait --timeout 120s
+          kubectl get deployment,service,pods
+
+      - name: Test the application deployed with Helm
+        run: |
+          kubectl port-forward svc/rickandmorty 18081:80 &
+          for i in $(seq 1 30); do curl -fs http://localhost:18081/healthcheck && break; sleep 1; done
+          scripts/smoke_test.sh http://localhost:18081
+
+      - name: Debug information on failure
+        if: failure()
+        run: |
+          kubectl get all -A
+          kubectl describe pods
+          kubectl logs -l app=rickandmorty-api --tail=100 || true
+          kubectl logs -l app.kubernetes.io/name=rickandmorty --tail=100 || true

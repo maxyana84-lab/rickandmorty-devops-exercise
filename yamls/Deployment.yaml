@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rickandmorty-api
+  labels:
+    app: rickandmorty-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: rickandmorty-api
+  template:
+    metadata:
+      labels:
+        app: rickandmorty-api
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+      containers:
+        - name: api
+          image: rickandmorty-api:1.0.0
+          imagePullPolicy: IfNotPresent   # the image is built locally and loaded into minikube/kind
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: CACHE_TTL_SECONDS
+              value: "300"
+          readinessProbe:
+            httpGet: {path: /healthcheck, port: http}
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /healthcheck, port: http}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 250m, memory: 128Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]

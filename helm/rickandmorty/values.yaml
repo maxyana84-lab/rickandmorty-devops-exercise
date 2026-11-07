@@ -1,0 +1,24 @@
+replicaCount: 2
+
+image:
+  repository: rickandmorty-api
+  tag: ""                 # defaults to the chart appVersion
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+
+containerPort: 8000
+
+env:
+  CACHE_TTL_SECONDS: "300"
+
+ingress:
+  enabled: true
+  className: nginx
+  host: rickandmorty.local
+
+resources:
+  requests: {cpu: 50m, memory: 64Mi}
+  limits: {cpu: 250m, memory: 128Mi}
