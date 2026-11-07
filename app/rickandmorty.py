@@ -55,7 +55,10 @@ def build_session() -> requests.Session:
 def iter_raw_characters(
     session: requests.Session, species: str, status: str, api_url: str | None = None
 ) -> Iterator[dict]:
-    """Yield every character the API returns for the filters, following the pagination."""
+    """Yield every character the API returns for the filters, following the pagination.
+
+    The API paginates (20 per page) and puts the link to the next page in info["next"].
+    """
     url: str | None = f"{(api_url or API_URL).rstrip('/')}/character"
     params: dict[str, str] | None = {"species": species, "status": status}
     while url:
@@ -105,7 +108,7 @@ def find_characters(
             location=(raw.get("location") or {}).get("name", ""),
             image=raw.get("image", ""),
         )
-        for raw in iter_raw_characters(session, "Human", "Alive", api_url)
+        for raw in iter_raw_characters(session, "human", "alive", api_url)
         if matches(raw, origin_mode)
     ]
 

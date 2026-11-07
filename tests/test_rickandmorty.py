@@ -49,11 +49,11 @@ def test_origin_modes(origin, prefix, exact):
 
 @responses.activate
 def test_find_characters_follows_pagination_and_filters():
-    page2 = f"{API}/character?page=2&species=Human&status=Alive"
+    page2 = f"{API}/character?page=2&species=human&status=alive"
     responses.get(
         f"{API}/character",
         json=page([character(1, "Rick Sanchez"), character(2, "Alien Rick", species="Alien")], page2),
-        match=[responses.matchers.query_param_matcher({"species": "Human", "status": "Alive"})],
+        match=[responses.matchers.query_param_matcher({"species": "human", "status": "alive"})],
     )
     responses.get(
         page2,
