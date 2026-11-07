@@ -1,5 +1,7 @@
 # Rick and Morty: alive humans from Earth
 
+![ci](https://github.com/maxyana84-lab/rickandmorty-devops-exercise/actions/workflows/ci.yml/badge.svg)
+
 A script and a small REST service that query the [Rick and Morty API](https://rickandmortyapi.com/documentation/#rest),
 keep the characters that are **Human**, **Alive** and from **Earth**, and return `Name`, `Location` and `Image`
 as a CSV file (script) or as JSON (service).
@@ -8,6 +10,24 @@ as a CSV file (script) or as JSON (service).
 Name,Location,Image
 Rick Sanchez,Citadel of Ricks,https://rickandmortyapi.com/api/character/avatar/1.jpeg
 ```
+
+## Example result
+The first run of the workflow ([run #1](https://github.com/maxyana84-lab/rickandmorty-devops-exercise/actions/runs/42401638396),
+7 November 2026) found **104** characters in the live API. The first rows of the CSV (the whole file is attached to the
+run as the `characters-csv` artifact):
+
+```
+Name,Location,Image
+Rick Sanchez,Citadel of Ricks,https://rickandmortyapi.com/api/character/avatar/1.jpeg
+Summer Smith,Earth (Replacement Dimension),https://rickandmortyapi.com/api/character/avatar/3.jpeg
+Beth Smith,Earth (Replacement Dimension),https://rickandmortyapi.com/api/character/avatar/4.jpeg
+Jerry Smith,Earth (Replacement Dimension),https://rickandmortyapi.com/api/character/avatar/5.jpeg
+```
+In the same run both deployments (plain manifests and Helm chart) reached 2/2 ready pods on a kind cluster, and
+`scripts/smoke_test.sh` passed against each of them (`/healthcheck`, `/characters` and `/characters.csv` returned 104
+characters, an unknown path returned `404`). The numbers can change when the public API data changes.
+
+Note that Morty Smith is not in the list: his origin in the API is `unknown`, not Earth.
 
 ## Contents
 - [How the filtering works](#how-the-filtering-works)
