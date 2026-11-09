@@ -25,6 +25,28 @@ jobs:
         run: |
           python -m app.export --output characters.csv
           head -n 5 characters.csv
+      - name: Check the result (structure, repeated characters) and show which of characters 1 and 2 are in it
+        run: |
+          python - <<'PY'
+          import csv, json, urllib.request
+          rows = list(csv.reader(open("characters.csv", encoding="utf-8")))
+          assert rows[0] == ["Name", "Location", "Image"], rows[0]
+          body = rows[1:]
+          assert body, "no characters found"
+          assert all(len(r) == 3 and all(r) for r in body), "a row has a missing or empty column"
+          names = [r[0] for r in body]
+          # the API has many characters with the same name (versions from other dimensions): compare the image URL,
+          # which contains the id of the character, to catch rows that a pagination bug would repeat
+          images = [r[2] for r in body]
+          assert len(images) == len(set(images)), "the same character appears twice"
+          print(len(names) - len(set(names)), "names occur more than once (different characters, this is normal)")
+          print(len(body), "characters in the CSV")
+          for cid in (1, 2):
+              # the API answers 403 to the default Python User-Agent (the application sends its own)
+              req = urllib.request.Request(f"https://rickandmortyapi.com/api/character/{cid}", headers={"User-Agent": "rickandmorty-devops-exercise-ci/1.0"})
+              c = json.load(urllib.request.urlopen(req, timeout=20))
+              print(f"{c['name']}: species={c['species']} status={c['status']} origin={c['origin']['name']!r} in the CSV (by id): {c['image'] in images}")
+          PY
       - name: Keep the CSV as a build artifact
         uses: actions/upload-artifact@v4
         with:
