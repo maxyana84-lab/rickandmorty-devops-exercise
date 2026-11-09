@@ -25,6 +25,22 @@ jobs:
         run: |
           python -m app.export --output characters.csv
           head -n 5 characters.csv
+      - name: Check the result (structure, duplicates) and show why Morty is not in it
+        run: |
+          python - <<'PY'
+          import csv, json, urllib.request
+          rows = list(csv.reader(open("characters.csv", encoding="utf-8")))
+          assert rows[0] == ["Name", "Location", "Image"], rows[0]
+          body = rows[1:]
+          assert body, "no characters found"
+          assert all(len(r) == 3 and all(r) for r in body), "a row has a missing or empty column"
+          names = [r[0] for r in body]
+          assert len(names) == len(set(names)), "duplicate names"
+          print(len(body), "characters in the CSV")
+          for cid in (1, 2):
+              c = json.load(urllib.request.urlopen(f"https://rickandmortyapi.com/api/character/{cid}", timeout=20))
+              print(f"{c['name']}: species={c['species']} status={c['status']} origin={c['origin']['name']!r} in the CSV: {c['name'] in names}")
+          PY
       - name: Keep the CSV as a build artifact
         uses: actions/upload-artifact@v4
         with:
