@@ -42,7 +42,9 @@ jobs:
           print(len(names) - len(set(names)), "names occur more than once (different characters, this is normal)")
           print(len(body), "characters in the CSV")
           for cid in (1, 2):
-              c = json.load(urllib.request.urlopen(f"https://rickandmortyapi.com/api/character/{cid}", timeout=20))
+              # the API answers 403 to the default Python User-Agent (the application sends its own)
+              req = urllib.request.Request(f"https://rickandmortyapi.com/api/character/{cid}", headers={"User-Agent": "rickandmorty-devops-exercise-ci/1.0"})
+              c = json.load(urllib.request.urlopen(req, timeout=20))
               print(f"{c['name']}: species={c['species']} status={c['status']} origin={c['origin']['name']!r} in the CSV: {c['name'] in names}")
           PY
       - name: Keep the CSV as a build artifact
