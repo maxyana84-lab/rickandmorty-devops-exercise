@@ -25,7 +25,7 @@ jobs:
         run: |
           python -m app.export --output characters.csv
           head -n 5 characters.csv
-      - name: Check the result (structure, duplicates) and show why Morty is not in it
+      - name: Check the result (structure, repeated characters) and show why Morty is not in it
         run: |
           python - <<'PY'
           import csv, json, urllib.request
@@ -35,7 +35,11 @@ jobs:
           assert body, "no characters found"
           assert all(len(r) == 3 and all(r) for r in body), "a row has a missing or empty column"
           names = [r[0] for r in body]
-          assert len(names) == len(set(names)), "duplicate names"
+          # the API has many characters with the same name (versions from other dimensions): compare the image URL,
+          # which contains the id of the character, to catch rows that a pagination bug would repeat
+          images = [r[2] for r in body]
+          assert len(images) == len(set(images)), "the same character appears twice"
+          print(len(names) - len(set(names)), "names occur more than once (different characters, this is normal)")
           print(len(body), "characters in the CSV")
           for cid in (1, 2):
               c = json.load(urllib.request.urlopen(f"https://rickandmortyapi.com/api/character/{cid}", timeout=20))
