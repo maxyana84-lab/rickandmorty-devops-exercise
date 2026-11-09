@@ -25,7 +25,7 @@ jobs:
         run: |
           python -m app.export --output characters.csv
           head -n 5 characters.csv
-      - name: Check the result (structure, repeated characters) and show why Morty is not in it
+      - name: Check the result (structure, repeated characters) and show which of characters 1 and 2 are in it
         run: |
           python - <<'PY'
           import csv, json, urllib.request
@@ -45,7 +45,7 @@ jobs:
               # the API answers 403 to the default Python User-Agent (the application sends its own)
               req = urllib.request.Request(f"https://rickandmortyapi.com/api/character/{cid}", headers={"User-Agent": "rickandmorty-devops-exercise-ci/1.0"})
               c = json.load(urllib.request.urlopen(req, timeout=20))
-              print(f"{c['name']}: species={c['species']} status={c['status']} origin={c['origin']['name']!r} in the CSV: {c['name'] in names}")
+              print(f"{c['name']}: species={c['species']} status={c['status']} origin={c['origin']['name']!r} in the CSV (by id): {c['image'] in images}")
           PY
       - name: Keep the CSV as a build artifact
         uses: actions/upload-artifact@v4

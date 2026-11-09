@@ -27,7 +27,7 @@ In the same run both deployments (plain manifests and Helm chart) reached 2/2 re
 `scripts/smoke_test.sh` passed against each of them (`/healthcheck`, `/characters` and `/characters.csv` returned 104
 characters, an unknown path returned `404`). The numbers can change when the public API data changes.
 
-Note that Morty Smith is not in the list: his origin in the API is `unknown`, not Earth.
+Note that the character with id 2, Morty Smith, is not in the result: the API gives him the origin `unknown`, not Earth. The list does contain other characters that are also called Morty Smith (versions from other dimensions, with an Earth origin): names are not unique in this API, the image URL (it contains the character id) is.
 
 ## Contents
 - [How the filtering works](#how-the-filtering-works)
